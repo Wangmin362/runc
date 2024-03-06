@@ -7,6 +7,8 @@ with namespaces, cgroups, capabilities, and filesystem access controls.
 It allows you to manage the lifecycle of the container performing additional operations
 after the container is created.
 
+Libcontainer提供了使用Go语言实现的namespace, cgroup, capabilities, 文件系统的访问能力；
+Libcontainer允许你在容器创建之后对容器做一些其他操作
 
 #### Container
 A container is a self contained execution environment that shares the kernel of the
