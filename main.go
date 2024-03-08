@@ -53,10 +53,12 @@ value for "bundle" is the current directory.`
 )
 
 func main() {
+	// 实例化应用，类似Cobra的用法
 	app := cli.NewApp()
-	app.Name = "runc"
+	app.Name = "runc" // 命令
 	app.Usage = usage
 
+	// 准备版本信息
 	v := []string{version}
 
 	if gitCommit != "" {
@@ -65,6 +67,7 @@ func main() {
 	v = append(v, "spec: "+specs.Version)
 	v = append(v, "go: "+runtime.Version())
 
+	// 解析语义化版本
 	major, minor, micro := seccomp.Version()
 	if major+minor+micro > 0 {
 		v = append(v, fmt.Sprintf("libseccomp: %d.%d.%d", major, minor, micro))
