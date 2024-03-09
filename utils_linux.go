@@ -125,7 +125,7 @@ func setupIO(process *libcontainer.Process, rootuid, rootgid int, createTTY, det
 		process.Stdout = nil
 		process.Stderr = nil
 		t := &tty{}
-		if !detach {
+		if !detach { // detach是啥意思？
 			if err := t.initHostConsole(); err != nil {
 				return nil, err
 			}
@@ -221,7 +221,7 @@ func createContainer(context *cli.Context, id string, spec *specs.Spec) (libcont
 type runner struct {
 	init            bool
 	enableSubreaper bool
-	shouldDestroy   bool
+	shouldDestroy   bool // 容器是否应该被销毁
 	detach          bool
 	listenFDs       []*os.File
 	preserveFDs     int
@@ -241,9 +241,14 @@ func (r *runner) run(config *specs.Process) (int, error) {
 			r.destroy()
 		}
 	}()
+
+	// TODO 检查终端，容器启动之后需要为容器分一个TTY
 	if err = r.checkTerminal(config); err != nil {
 		return -1, err
 	}
+
+	// 实例化一个进程，设置进程的uid, gid, capability
+	// TODO 如何理解这里的进程？
 	process, err := newProcess(*config)
 	if err != nil {
 		return -1, err
@@ -257,6 +262,7 @@ func (r *runner) run(config *specs.Process) (int, error) {
 		process.ExtraFiles = append(process.ExtraFiles, r.listenFDs...)
 	}
 	baseFd := 3 + len(process.ExtraFiles)
+	// TODO 这玩意干嘛的
 	for i := baseFd; i < baseFd+r.preserveFDs; i++ {
 		_, err = os.Stat("/proc/self/fd/" + strconv.Itoa(i))
 		if err != nil {
@@ -277,6 +283,7 @@ func (r *runner) run(config *specs.Process) (int, error) {
 	// with detaching containers, and then we get a tty after the container has
 	// started.
 	handler := newSignalHandler(r.enableSubreaper, r.notifySocket)
+	// TODO 这里在干嘛
 	tty, err := setupIO(process, rootuid, rootgid, config.Terminal, detach, r.consoleSocket)
 	if err != nil {
 		return -1, err
@@ -284,9 +291,9 @@ func (r *runner) run(config *specs.Process) (int, error) {
 	defer tty.Close()
 
 	switch r.action {
-	case CT_ACT_CREATE:
+	case CT_ACT_CREATE: // TODO 启动容器和运行容器有何区别？
 		err = r.container.Start(process)
-	case CT_ACT_RESTORE:
+	case CT_ACT_RESTORE: // TODO 恢复容器，应该是从checkpoint恢复
 		err = r.container.Restore(process, r.criuOpts)
 	case CT_ACT_RUN:
 		err = r.container.Run(process)
@@ -296,6 +303,7 @@ func (r *runner) run(config *specs.Process) (int, error) {
 	if err != nil {
 		return -1, err
 	}
+	// TODO 等待终端干嘛呢？
 	if err = tty.waitConsole(); err != nil {
 		r.terminate(process)
 		return -1, err
@@ -307,6 +315,7 @@ func (r *runner) run(config *specs.Process) (int, error) {
 			return -1, err
 		}
 	}
+	// TODO ？
 	status, err := handler.forward(process, tty, detach)
 	if err != nil {
 		r.terminate(process)

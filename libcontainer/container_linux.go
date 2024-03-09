@@ -230,15 +230,20 @@ func (c *linuxContainer) Set(config configs.Config) error {
 func (c *linuxContainer) Start(process *Process) error {
 	c.m.Lock()
 	defer c.m.Unlock()
+	// TODO 这里会涉及到什么资源的冲突呢？
+
 	if c.config.Cgroups.Resources.SkipDevices {
 		return errors.New("can't start container with SkipDevices set")
 	}
+	// TODO 这里在初始化什么？
 	if process.Init {
 		if err := c.createExecFifo(); err != nil {
 			return err
 		}
 	}
+	// TODO 一个进程是如何启动的？
 	if err := c.start(process); err != nil {
+		// 善后处理，如果进程启动的时候创建了某些资源，那么进程退出的时候需要清理资源
 		if process.Init {
 			c.deleteExecFifo()
 		}
