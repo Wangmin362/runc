@@ -55,7 +55,7 @@ value for "bundle" is the current directory.`
 func main() {
 	// 实例化应用，类似Cobra的用法
 	app := cli.NewApp()
-	app.Name = "runc" // 命令
+	app.Name = "runc" // 设置当前应用的名字为runc，估计后续日志中会有体现。
 	app.Usage = usage
 
 	// 准备版本信息
@@ -100,7 +100,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "root",
-			Value: root,
+			Value: root, // 默认就是/run/runc
 			Usage: "root directory for storage of container state (this should be located in tmpfs)",
 		},
 		cli.StringFlag{
@@ -118,25 +118,29 @@ func main() {
 			Usage: "ignore cgroup permission errors ('true', 'false', or 'auto')",
 		},
 	}
+
+	// 设置当前应用所有支持的命令
 	app.Commands = []cli.Command{
-		checkpointCommand,
-		createCommand,
-		deleteCommand,
-		eventsCommand,
-		execCommand,
-		killCommand,
-		listCommand,
-		pauseCommand,
-		psCommand,
-		restoreCommand,
-		resumeCommand,
-		runCommand,
-		specCommand,
-		startCommand,
-		stateCommand,
-		updateCommand,
-		featuresCommand,
+		checkpointCommand, // checkpoint用于容器的备份和恢复
+		createCommand,     // 创建容器
+		deleteCommand,     // 删除容器
+		eventsCommand,     // 查看事件
+		execCommand,       // 在容器中执行命令
+		killCommand,       // 删除容器
+		listCommand,       // 列出当前所有的容器
+		pauseCommand,      // 暂停容器
+		psCommand,         // TODO 列出当前所有的容器
+		restoreCommand,    // TODO ?
+		resumeCommand,     // 恢复容器，和checkpoint对应
+		runCommand,        // 运行容器
+		specCommand,       // TODO ?
+		startCommand,      // 启动容器
+		stateCommand,      // 查看容器的状态
+		updateCommand,     // TODO ?
+		featuresCommand,   // TODO ?
 	}
+
+	// TODO 命令启动之前需要执行的事情   XDG规范是啥？
 	app.Before = func(context *cli.Context) error {
 		if !context.IsSet("root") && xdgRuntimeDir != "" {
 			// According to the XDG specification, we need to set anything in

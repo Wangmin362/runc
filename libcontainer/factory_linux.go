@@ -80,7 +80,7 @@ func New(root string, options ...func(*LinuxFactory) error) (Factory, error) {
 		}
 	}
 	l := &LinuxFactory{
-		Root:      root,
+		Root:      root, // 一般会被设置为/run/runc目录
 		InitPath:  "/proc/self/exe",
 		InitArgs:  []string{os.Args[0], "init"},
 		Validator: validate.New(),

@@ -25,6 +25,7 @@ func newNotifySocket(context *cli.Context, notifySocketHost string, id string) *
 		return nil
 	}
 
+	// root目录一般就是/run/runc
 	root := filepath.Join(context.GlobalString("root"), id)
 	socketPath := filepath.Join(root, "notify", "notify.sock")
 

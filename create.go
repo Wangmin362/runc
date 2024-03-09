@@ -31,7 +31,7 @@ command(s) that get executed on start, edit the args parameter of the spec. See
 		},
 		cli.StringFlag{
 			Name:  "console-socket",
-			Value: "",
+			Value: "", // TODO 什么叫做伪终端
 			Usage: "path to an AF_UNIX socket which will receive a file descriptor referencing the master end of the console's pseudoterminal",
 		},
 		cli.StringFlag{
@@ -53,9 +53,14 @@ command(s) that get executed on start, edit the args parameter of the spec. See
 		},
 	},
 	Action: func(context *cli.Context) error {
+		// 简单的检验参数数量
 		if err := checkArgs(context, 1, exactArgs); err != nil {
 			return err
 		}
+
+		// 命令形式：runc create <container-id> -b <bundle>
+
+		// TODO 启动容器，命令、参数信息被封装到了context当中
 		status, err := startContainer(context, CT_ACT_CREATE, nil)
 		if err == nil {
 			// exit with the container's exit status so any external supervisor

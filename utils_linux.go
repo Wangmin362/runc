@@ -210,6 +210,7 @@ func createContainer(context *cli.Context, id string, spec *specs.Spec) (libcont
 		return nil, err
 	}
 
+	// 加载容器工厂，实际上runc中目前只有一个LinuxFactory工厂
 	factory, err := loadFactory(context)
 	if err != nil {
 		return nil, err
@@ -361,6 +362,7 @@ func validateProcessSpec(spec *specs.Process) error {
 	return nil
 }
 
+// TODO 这玩意有啥用？ CT表示撒意思？
 type CtAct uint8
 
 const (
@@ -370,24 +372,30 @@ const (
 )
 
 func startContainer(context *cli.Context, action CtAct, criuOpts *libcontainer.CriuOpts) (int, error) {
+	// 修复用户传递的pidFile参数，如果用户没有设置这个参数，直接返回；如果设置了，并且路径用的相对路径，那么转换为绝对路径
 	if err := revisePidFile(context); err != nil {
 		return -1, err
 	}
+
+	// 加载指定bundle目录中的config.json配置文件
 	spec, err := setupSpec(context)
 	if err != nil {
 		return -1, err
 	}
 
+	// 获取第一个参数，这个参数对于create命令来说，肯定是容器的ID
 	id := context.Args().First()
 	if id == "" {
 		return -1, errEmptyID
 	}
 
+	// TODO 这玩意干嘛的？
 	notifySocket := newNotifySocket(context, os.Getenv("NOTIFY_SOCKET"), id)
 	if notifySocket != nil {
 		notifySocket.setupSpec(spec)
 	}
 
+	// 根据config.json配置文件创建一个容器
 	container, err := createContainer(context, id, spec)
 	if err != nil {
 		return -1, err
@@ -405,7 +413,7 @@ func startContainer(context *cli.Context, action CtAct, criuOpts *libcontainer.C
 	}
 
 	// Support on-demand socket activation by passing file descriptors into the container init process.
-	listenFDs := []*os.File{}
+	var listenFDs []*os.File
 	if os.Getenv("LISTEN_FDS") != "" {
 		listenFDs = activation.Files(false)
 	}
@@ -424,5 +432,7 @@ func startContainer(context *cli.Context, action CtAct, criuOpts *libcontainer.C
 		criuOpts:        criuOpts,
 		init:            true,
 	}
+
+	// TODO 运行容器
 	return r.run(spec.Process)
 }
