@@ -109,6 +109,7 @@ func revisePidFile(context *cli.Context) error {
 }
 
 // reviseRootDir convert the root to absolute path
+// 如果没有指定Root目录，那么无需修复，因为默认就是/run/runc目录；如果设置了Root目录，那么修改为绝对路径
 func reviseRootDir(context *cli.Context) error {
 	root := context.GlobalString("root")
 	if root == "" {

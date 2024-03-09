@@ -67,6 +67,7 @@ command(s) that get executed on start, edit the args parameter of the spec. See
 			// is notified of the exit with the correct exit status.
 			os.Exit(status)
 		}
+		// 相当于errors.WithMessagef(err, "runc create failed")，只不过这种方式是通过Go语言官方库实现的
 		return fmt.Errorf("runc create failed: %w", err)
 	},
 }

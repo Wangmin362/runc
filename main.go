@@ -155,10 +155,13 @@ func main() {
 				fatal(err)
 			}
 		}
+
+		// 如果没有指定Root目录，那么无需修复，因为默认就是/run/runc目录；如果设置了Root目录，那么修改为绝对路径
 		if err := reviseRootDir(context); err != nil {
 			return err
 		}
 
+		// 设置logrus日志框架
 		return configLogrus(context)
 	}
 
