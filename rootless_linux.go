@@ -9,8 +9,10 @@ import (
 	"github.com/urfave/cli"
 )
 
+// TODO 判断用户是否是以非root的方式启动容器的判断条件还挺复杂的
 func shouldUseRootlessCgroupManager(context *cli.Context) (bool, error) {
 	if context != nil {
+		// 解析是否以非root的方式启动容器
 		b, err := parseBoolOrAuto(context.GlobalString("rootless"))
 		if err != nil {
 			return false, err

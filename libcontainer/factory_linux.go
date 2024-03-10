@@ -144,6 +144,7 @@ func (l *LinuxFactory) Create(id string, config *configs.Config) (Container, err
 		return nil, err
 	}
 
+	// cgroupManager
 	cm, err := manager.New(config.Cgroups)
 	if err != nil {
 		return nil, err

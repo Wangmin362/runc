@@ -74,7 +74,9 @@ func getDefaultImagePath() string {
 
 // newProcess returns a new libcontainer Process with the arguments from the
 // spec and stdio from the current process.
+// 1、用于把OCI运行时规范中进程的属性映射到libcontainer当中
 func newProcess(p specs.Process) (*libcontainer.Process, error) {
+	// 初始化libcontainer进程
 	lp := &libcontainer.Process{
 		Args: p.Args,
 		Env:  p.Env,
@@ -193,10 +195,13 @@ func createPidFile(path string, process *libcontainer.Process) error {
 }
 
 func createContainer(context *cli.Context, id string, spec *specs.Spec) (libcontainer.Container, error) {
+	// 所谓的无根容器，其实就是指的是容器是通过以非root的方式启动的
 	rootlessCg, err := shouldUseRootlessCgroupManager(context)
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO 创建容器配置
 	config, err := specconv.CreateLibcontainerConfig(&specconv.CreateOpts{
 		CgroupName:       id,
 		UseSystemdCgroup: context.GlobalBool("systemd-cgroup"),
@@ -204,7 +209,7 @@ func createContainer(context *cli.Context, id string, spec *specs.Spec) (libcont
 		NoNewKeyring:     context.Bool("no-new-keyring"),
 		Spec:             spec,
 		RootlessEUID:     os.Geteuid() != 0,
-		RootlessCgroups:  rootlessCg,
+		RootlessCgroups:  rootlessCg, // 是否是以非root的方式运行容器的
 	})
 	if err != nil {
 		return nil, err
@@ -219,11 +224,11 @@ func createContainer(context *cli.Context, id string, spec *specs.Spec) (libcont
 }
 
 type runner struct {
-	init            bool
+	init            bool // 当前运行的进程是否是容器中第一个运行的进程 TODO 这个设置有何作用？
 	enableSubreaper bool
 	shouldDestroy   bool // 容器是否应该被销毁
 	detach          bool
-	listenFDs       []*os.File
+	listenFDs       []*os.File // TODO 这玩意干嘛的？
 	preserveFDs     int
 	pidFile         string
 	consoleSocket   string
@@ -249,15 +254,20 @@ func (r *runner) run(config *specs.Process) (int, error) {
 
 	// 实例化一个进程，设置进程的uid, gid, capability
 	// TODO 如何理解这里的进程？
+	// 这里实际上就是把OCI容器运行时规范中定义的进程属性转换为libcontainer容器的进程
 	process, err := newProcess(*config)
 	if err != nil {
 		return -1, err
 	}
+	// 设置容器的日志级别  TODO 为什么容器的日志级别是通过logrus的日志级别来决定的？
 	process.LogLevel = strconv.Itoa(int(logrus.GetLevel()))
 	// Populate the fields that come from runner.
+	// 用于设置当前进程是否是容器中的第一个进程
 	process.Init = r.init
+	// 用于设置cGroup
 	process.SubCgroupPaths = r.subCgroupPaths
 	if len(r.listenFDs) > 0 {
+		// 添加环境变量
 		process.Env = append(process.Env, "LISTEN_FDS="+strconv.Itoa(len(r.listenFDs)), "LISTEN_PID=1")
 		process.ExtraFiles = append(process.ExtraFiles, r.listenFDs...)
 	}
@@ -386,7 +396,8 @@ func startContainer(context *cli.Context, action CtAct, criuOpts *libcontainer.C
 		return -1, err
 	}
 
-	// 加载指定bundle目录中的config.json配置文件
+	// 1、加载指定bundle目录中的config.json配置文件
+	// 2、实际上，spec可以理解为用户期望的配置，容器运行时的目标就是按照spec的设计启动一个符合用户期望的容器
 	spec, err := setupSpec(context)
 	if err != nil {
 		return -1, err
@@ -404,7 +415,8 @@ func startContainer(context *cli.Context, action CtAct, criuOpts *libcontainer.C
 		notifySocket.setupSpec(spec)
 	}
 
-	// 根据config.json配置文件创建一个容器
+	// 1、根据config.json配置文件创建一个容器
+	// 2、TODO 容器运行时的容器和进程有何区别？
 	container, err := createContainer(context, id, spec)
 	if err != nil {
 		return -1, err

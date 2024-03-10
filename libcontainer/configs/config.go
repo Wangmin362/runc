@@ -87,16 +87,21 @@ type Syscall struct {
 // which are common across platforms, and those which are platform specific.
 
 // Config defines configuration options for executing a process inside a contained environment.
+// 1、用于定义进程再容器中运行的各种环境变量
 type Config struct {
 	// NoPivotRoot will use MS_MOVE and a chroot to jail the process into the container's rootfs
 	// This is a common option when the container is running in ramdisk
+	// TODO 这玩意是容器技术的基石，得好好研究一下
 	NoPivotRoot bool `json:"no_pivot_root"`
 
 	// ParentDeathSignal specifies the signal that is sent to the container's process in the case
 	// that the parent process dies.
+	// 1、父进程死亡的信号，当父进程挂了，子进程需要关心父进程死亡的消息、
+	// 2、再Linux中，信号其实就是一个整数
 	ParentDeathSignal int `json:"parent_death_signal"`
 
 	// Path to a directory containing the container's root filesystem.
+	// 用于指向根文件系统
 	Rootfs string `json:"rootfs"`
 
 	// Umask is the umask to use inside of the container.
@@ -104,21 +109,27 @@ type Config struct {
 
 	// Readonlyfs will remount the container's rootfs as readonly where only externally mounted
 	// bind mounts are writtable.
+	// 根文件系统是否是一个只读的系统
 	Readonlyfs bool `json:"readonlyfs"`
 
 	// Specifies the mount propagation flags to be applied to /.
+	// TODO 什么是挂载传播属性
 	RootPropagation int `json:"rootPropagation"`
 
 	// Mounts specify additional source and destination paths that will be mounted inside the container's
 	// rootfs and mount namespace if specified
+	// TODO 这玩意应该就是docker实现volume的机制
 	Mounts []*Mount `json:"mounts"`
 
 	// The device nodes that should be automatically created within the container upon container start.  Note, make sure that the node is marked as allowed in the cgroup as well!
+	// TODO 这里的设备是啥意思？
 	Devices []*devices.Device `json:"devices"`
 
+	// TODO 挂载一般用来干嘛？
 	MountLabel string `json:"mount_label"`
 
 	// Hostname optionally sets the container's hostname if provided
+	// 主机名用来干嘛？
 	Hostname string `json:"hostname"`
 
 	// Namespaces specifies the container's namespaces that it should setup when cloning the init process
@@ -130,9 +141,11 @@ type Config struct {
 	Capabilities *Capabilities `json:"capabilities"`
 
 	// Networks specifies the container's network setup to be created
+	// 容器网络是如何设置的？
 	Networks []*Network `json:"networks"`
 
 	// Routes can be specified to create entries in the route table as the container is started
+	// TODO 容器的路由表是如何进行设置的？用户可以进行怎样的定制化设置？
 	Routes []*Route `json:"routes"`
 
 	// Cgroups specifies specific cgroup settings for the various subsystems that the container is
@@ -145,10 +158,12 @@ type Config struct {
 
 	// ProcessLabel specifies the label to apply to the process running in the container.  It is
 	// commonly used by selinux
+	// SELinux使用的标签
 	ProcessLabel string `json:"process_label,omitempty"`
 
 	// Rlimits specifies the resource limits, such as max open files, to set in the container
 	// If Rlimits are not set, the container will inherit rlimits from the parent process
+	// 用于限制容器的东西
 	Rlimits []Rlimit `json:"rlimits,omitempty"`
 
 	// OomScoreAdj specifies the adjustment to be made by the kernel when calculating oom scores
