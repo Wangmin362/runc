@@ -63,6 +63,7 @@ type State struct {
 
 	// Specified if the container was started under the rootless mode.
 	// Set to true if BaseState.Config.RootlessEUID && BaseState.Config.RootlessCgroups
+	// 是否是以非root的方式启动的容器
 	Rootless bool `json:"rootless"`
 
 	// Paths to all the container's cgroups, as returned by (*cgroups.Manager).GetPaths
@@ -71,6 +72,7 @@ type State struct {
 	// to the cgroup for this subsystem.
 	//
 	// For cgroup v2 unified hierarchy, a key is "", and the value is the unified path.
+	// cGroup路径
 	CgroupPaths map[string]string `json:"cgroup_paths"`
 
 	// NamespacePaths are filepaths to the container's namespaces. Key is the namespace type
@@ -78,9 +80,11 @@ type State struct {
 	NamespacePaths map[configs.NamespaceType]string `json:"namespace_paths"`
 
 	// Container's standard descriptors (std{in,out,err}), needed for checkpoint and restore
+	// TODO 什么叫做外部描述
 	ExternalDescriptors []string `json:"external_descriptors,omitempty"`
 
 	// Intel RDT "resource control" filesystem path
+	// TODO 英特尔的RDT是啥
 	IntelRdtPath string `json:"intel_rdt_path"`
 }
 
@@ -237,6 +241,7 @@ func (c *linuxContainer) Start(process *Process) error {
 	}
 	// TODO 这里在初始化什么？
 	if process.Init {
+		// 创建exec.fifo文件
 		if err := c.createExecFifo(); err != nil {
 			return err
 		}
@@ -341,6 +346,7 @@ type openResult struct {
 }
 
 func (c *linuxContainer) start(process *Process) (retErr error) {
+	// TODO 创建一个父进程
 	parent, err := c.newParentProcess(process)
 	if err != nil {
 		return fmt.Errorf("unable to create new parent process: %w", err)
@@ -423,6 +429,7 @@ func (c *linuxContainer) Signal(s os.Signal, all bool) error {
 	return ErrNotRunning
 }
 
+// 创建exec.fifo文件
 func (c *linuxContainer) createExecFifo() error {
 	rootuid, err := c.Config().HostRootUID()
 	if err != nil {
@@ -433,6 +440,7 @@ func (c *linuxContainer) createExecFifo() error {
 		return err
 	}
 
+	// TODO exec.fifo文件是干嘛的？
 	fifoName := filepath.Join(c.root, execFifoFilename)
 	if _, err := os.Stat(fifoName); err == nil {
 		return fmt.Errorf("exec fifo %s already exists", fifoName)
@@ -470,20 +478,23 @@ func (c *linuxContainer) includeExecFifo(cmd *exec.Cmd) error {
 }
 
 func (c *linuxContainer) newParentProcess(p *Process) (parentProcess, error) {
+	// TODO 创建父子进程的Socket
 	parentInitPipe, childInitPipe, err := utils.NewSockPair("init")
 	if err != nil {
 		return nil, fmt.Errorf("unable to create init pipe: %w", err)
 	}
 	messageSockPair := filePair{parentInitPipe, childInitPipe}
 
+	// TODO 操作系统的管道
 	parentLogPipe, childLogPipe, err := os.Pipe()
 	if err != nil {
 		return nil, fmt.Errorf("unable to create log pipe: %w", err)
 	}
 	logFilePair := filePair{parentLogPipe, childLogPipe}
 
+	// 本质上就是通过命令行执行命令
 	cmd := c.commandTemplate(p, childInitPipe, childLogPipe)
-	if !p.Init {
+	if !p.Init { // 说明当前进程不是容器中的第一个进程
 		return c.newSetnsProcess(p, cmd, messageSockPair, logFilePair)
 	}
 
@@ -625,12 +636,14 @@ func (c *linuxContainer) newInitProcess(p *Process, cmd *exec.Cmd, messageSockPa
 
 func (c *linuxContainer) newSetnsProcess(p *Process, cmd *exec.Cmd, messageSockPair, logFilePair filePair) (*setnsProcess, error) {
 	cmd.Env = append(cmd.Env, "_LIBCONTAINER_INITTYPE="+string(initSetns))
+	// 获取容器的状态
 	state, err := c.currentState()
 	if err != nil {
 		return nil, fmt.Errorf("unable to get container state: %w", err)
 	}
 	// for setns process, we don't have to set cloneflags as the process namespaces
 	// will only be set via setns syscall
+	// TODO 这里是在干嘛？
 	data, err := c.bootstrapData(0, state.NamespacePaths, initSetns)
 	if err != nil {
 		return nil, err

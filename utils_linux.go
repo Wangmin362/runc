@@ -220,6 +220,8 @@ func createContainer(context *cli.Context, id string, spec *specs.Spec) (libcont
 	if err != nil {
 		return nil, err
 	}
+	// TODO 这里是如何创建容器的？
+	// 1、主要是做了一些检测工作，譬如容器的工作目录在创建之前必须不能存在，然后创建了cGroupManager限制容器，并且校验了cGroup的状态
 	return factory.Create(id, config)
 }
 
@@ -446,7 +448,7 @@ func startContainer(context *cli.Context, action CtAct, criuOpts *libcontainer.C
 		listenFDs:       listenFDs,
 		notifySocket:    notifySocket,
 		consoleSocket:   context.String("console-socket"),
-		detach:          context.Bool("detach"),
+		detach:          context.Bool("detach"), // 容器创建的两种模式，一种是detach，另外一种则是forceground
 		pidFile:         context.String("pid-file"),
 		preserveFDs:     context.Int("preserve-fds"),
 		action:          action,

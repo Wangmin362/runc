@@ -125,26 +125,34 @@ type LinuxFactory struct {
 }
 
 func (l *LinuxFactory) Create(id string, config *configs.Config) (Container, error) {
+	// 必须要设置Root目录
 	if l.Root == "" {
 		return nil, errors.New("root not set")
 	}
+	// 校验容器ID
 	if err := l.validateID(id); err != nil {
 		return nil, err
 	}
+
+	// 校验配置
 	if err := l.Validator.Validate(config); err != nil {
 		return nil, err
 	}
+	// 拼接处容器的目录
 	containerRoot, err := securejoin.SecureJoin(l.Root, id)
 	if err != nil {
 		return nil, err
 	}
+	// 访问此目录
 	if _, err := os.Stat(containerRoot); err == nil {
+		// 容器当前还没有再运行，所以当前目录肯定是不存在的，因此单反此目录可以访问，那么一定不可以创建当前容器
 		return nil, ErrExist
 	} else if !os.IsNotExist(err) {
+		// 如果当前出错了，但是不是目录不存在错误，那么直接返回错误
 		return nil, err
 	}
 
-	// cgroupManager
+	// 实例化cGroupManager  TODO 这四种cGroup有啥区别？
 	cm, err := manager.New(config.Cgroups)
 	if err != nil {
 		return nil, err
@@ -185,9 +193,11 @@ func (l *LinuxFactory) Create(id string, config *configs.Config) (Container, err
 		return nil, errors.New("container's cgroup unexpectedly frozen")
 	}
 
+	// 创建容器的工作目录
 	if err := os.MkdirAll(containerRoot, 0o711); err != nil {
 		return nil, err
 	}
+	// 修改此目录的uid, gid
 	if err := os.Chown(containerRoot, unix.Geteuid(), unix.Getegid()); err != nil {
 		return nil, err
 	}
@@ -197,11 +207,11 @@ func (l *LinuxFactory) Create(id string, config *configs.Config) (Container, err
 		config:          config,
 		initPath:        l.InitPath,
 		initArgs:        l.InitArgs,
-		criuPath:        l.CriuPath,
+		criuPath:        l.CriuPath, // 容器的checkpoint以及restore
 		newuidmapPath:   l.NewuidmapPath,
 		newgidmapPath:   l.NewgidmapPath,
 		cgroupManager:   cm,
-		intelRdtManager: intelrdt.NewManager(config, id, ""),
+		intelRdtManager: intelrdt.NewManager(config, id, ""), // Inter RDT是啥？
 	}
 	c.state = &stoppedState{c: c}
 	return c, nil

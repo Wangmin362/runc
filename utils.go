@@ -79,9 +79,9 @@ func setupSpec(context *cli.Context) (*specs.Spec, error) {
 		}
 	}
 
-	// 如果用户没有指定bundle目录，那么默认就是当前的工作目录就是bundle目录，如果当前目录并不是标准的bundle，那么肯定会有问题
-
-	// 一个标准的bundle目录应该包含两个部分，其中一部分是config.json文件，另外一部分是根文件系统，这里其实就是在加载当前bundle目录中的config.json文件
+	// 1、如果用户没有指定bundle目录，那么默认就是当前的工作目录就是bundle目录，如果当前目录并不是标准的bundle，那么肯定会有问题
+	// 2、一个标准的bundle目录应该包含两个部分，其中一部分是config.json文件，另外一部分是根文件系统，这里其实就是在加载当前bundle目录中的config.json文件
+	// 3、直接加载指定bundle目录或者当前目录中的config.json文件
 	spec, err := loadSpec(specConfig)
 	if err != nil {
 		return nil, err
